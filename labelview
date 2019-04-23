@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import sys
+
+from PIL import Image, ImageQt
+
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QDesktopWidget, QGraphicsView
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap
+ 
+class App(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.title = sys.argv[1]
+        centerPoint = QDesktopWidget().availableGeometry().center()
+        self.width = 640
+        self.height = 480
+        self.left = centerPoint.x() - self.width / 2
+        self.top = centerPoint.y() - self.height / 2
+        self.initUI()
+
+    def centerWindow(self):
+        centerPoint = QDesktopWidget().availableGeometry().center()
+        self.left = centerPoint.x() - self.width / 2
+        self.top = centerPoint.y() - self.height / 2
+        self.setGeometry(self.left, self.top, self.width, self.height)
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+ 
+        # Create widget
+        self.labelImage = QLabel(self)
+
+        self.im = Image.open(sys.argv[1])
+        self.im_rgb = self.im.convert('RGB')
+
+        pixmap = QPixmap.fromImage(ImageQt.ImageQt(self.im))
+        self.labelImage.setPixmap(pixmap)
+        self.labelText = QLabel(self)
+        self.labelText.setGeometry(0, 0, self.width, 15)
+        self.labelText.setText("")
+
+        self.labelImage.setMouseTracking(True)
+        self.labelImage.installEventFilter(self)
+        self.labelImage.setCursor(QtCore.Qt.CrossCursor)
+
+        # geometry
+
+        self.width = pixmap.width()
+        self.height = pixmap.height()
+        self.resize(self.width, self.height)
+        self.centerWindow()
+ 
+        self.show()
+
+    def eventFilter(self, source, event):
+            if event.type() == QtCore.QEvent.MouseMove:
+                if event.buttons() == QtCore.Qt.NoButton:
+                    x, y = event.pos().x(), event.pos().y()
+                    index = self.im.getpixel((x, y))
+                    r, g, b = self.im_rgb.getpixel((x, y))
+                    self.labelText.setText("Index %d | R %d G %d B %d | Hex #%02x%02x%02x" % (index, r, g, b, r, g, b))
+
+            elif event.type() == QtCore.QEvent.MouseButtonPress:
+                if event.button() == QtCore.Qt.LeftButton:
+                    print("Press!")
+            return super().eventFilter(source, event)
+ 
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = App()
+    sys.exit(app.exec_())
